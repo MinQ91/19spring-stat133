@@ -1,0 +1,102 @@
+---
+title: "workout 01"
+author: "Minkyu Park"
+date: '2018 3 8 '
+output: github_document
+---
+
+```{r out.width='80%', echo = FALSE, fig.align='center'}
+knitr::include_graphics('../images/gsw-shot-charts.pdf')
+library(dplyr)
+library(ggplot2)
+```
+
+
+##Question 5
+```{r}
+total_shots <- read.csv('../data/shots-data.csv', stringsAsFactor = FALSE)
+
+total_shot_player <-  total_shots %>%
+  group_by(name) %>%
+  summarise(total = length(shot_made_flag)) %>%
+  arrange(desc(total))
+
+total_shot_player
+
+#effective shooting % by p
+perc_all_made <- total_shots %>%
+  group_by(name) %>%
+  summarise(total = length(shot_made_flag), made = sum(shot_made_flag == "shot_yes"), perc_made = made / total) %>%
+  arrange(desc(perc_made))
+
+perc_all_made
+
+perc_2p_made <- total_shots %>%
+  group_by(name) %>%
+  filter(shot_type == '2PT Field Goal') %>%
+  summarise(total = length(shot_made_flag), made = sum(shot_made_flag == "shot_yes"), perc_made = made / total) %>%
+  arrange(desc(perc_made))
+
+perc_2p_made
+
+perc_3p_made <- total_shots %>%
+  group_by(name) %>%
+  filter(shot_type == '3PT Field Goal') %>%
+  summarise(total = length(shot_made_flag), made = sum(shot_made_flag == "shot_yes"), perc_made = made / total) %>%
+  arrange(desc(perc_made))
+
+perc_3p_made
+```
+
+
+
+
+
+
+
+
+
+
+When do players play hardest during the match?
+
+People easily think that players have high possibility to make a shot successfully depenpends on distance from the goal;
+however, Minkyu Park reporter find out that goal success rate is not depends on it's distance but time. 
+chunk  down this comments show evidence that percentage dpends on distance have no relations.
+
+```{r}
+rel_dis_made <- total_shots %>%
+  group_by(shot_distance) %>%
+  summarise(made_shot_prop = sum(shot_made_flag == 'shot_yes') / length(shot_made_flag))
+
+rel_dis_made
+
+rel_dis_made %>%
+  filter(made_shot_prop >= 0.5)
+
+ggplot(rel_dis_made, aes(x = shot_distance, y = made_shot_prop)) +
+  geom_col()
+```
+
+from down code show that when player make most points is from the 3rd quater.  
+I beliveve that it is because from the 1st and 2nd quater players have tendency to save their stemina, 
+but from 3rd quater they put most of energy during the  match. 
+
+```{r}
+total_shots %>%
+  group_by(name, minute) %>%
+  summarise(total_num_shot = length(shot_made_flag)) %>%
+  ggplot(aes(x = minute, y = total_num_shot)) +
+  geom_rect(mapping = aes(xmin = 0, xmax=12, ymin = 0, ymax = 60), fill = 'grey90') +
+  geom_rect(mapping = aes(xmin = 24, xmax=  36, ymin = 0, ymax = 60), fill = 'grey90') +
+  geom_point(color = 'dodgerblue2') +
+  geom_path(color = 'deepskyblue1') +
+  scale_x_continuous(limits = c(0,48), breaks = seq(from = 0, to = 48, by =12))+
+  facet_wrap(~ name) +
+  theme_bw() +
+  theme_minimal() +
+  ylab('total number of shots') +
+  ggtitle('Total number of shots(by minute of occurrence)')
+
+```
+* From the result, we can observe there is no strong correlation between shot_distance and made_shot_pro. The shot_distance on 0 and 1 inch has high rate of made shot. However, if the shooting distance has been far from a rim more than 3 inches, then the result shows **almost same rate of success.** Even the shot attempt between near 18 inches from a rim has higher number of rate than the shot_distance between 5 and 10. And after the distance 33inches, there is only one shot has made, so the shot attempt on the distance more than mid of 30's does not guarantee to score. Made_shot_prop has more than 50% on 0 to 2 distance; it is obvious that layup, dunk, or jump shoot under the basket have high FG%. And distance near 18 inches have more than 50% of success rate.
+Therefore, reporter Minkyu Park claims that the key point to win the game is how to allocate players stemina to each quater of the match properly. 
